@@ -1,0 +1,552 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>parser: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">YADRO-parser/cmd/parser/main.go (0.0%)</option>
+				
+				<option value="file1">YADRO-parser/internal/cyberclub/cyberclub.go (83.7%)</option>
+				
+				<option value="file2">YADRO-parser/internal/cyberclub/player.go (87.5%)</option>
+				
+				<option value="file3">YADRO-parser/internal/cyberclub/table.go (100.0%)</option>
+				
+				<option value="file4">YADRO-parser/internal/parser/parser.go (76.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "YADRO-parser/internal/parser"
+        "fmt"
+        "os"
+)
+
+func main() <span class="cov0" title="0">{
+        args := os.Args
+        if len(args) != 2 </span><span class="cov0" title="0">{
+                fmt.Println("Usage: task.exe &lt;filename&gt;")
+                return
+        }</span>
+
+        <span class="cov0" title="0">filePath := args[1]
+        err := parser.Parse(filePath)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println(err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package cyberclub
+
+import (
+        "bufio"
+        "fmt"
+        "sort"
+        "strconv"
+        "strings"
+        "time"
+)
+
+const (
+        incomingClientEntered  = 1
+        incomingClientTakeSeat = 2
+        incomingClientWaiting  = 3
+        incomingClientLeft     = 4
+)
+
+const (
+        outcomingClientLeft     = 11
+        outcomingClientTakeSeat = 12
+)
+
+const (
+        clientAlreadyInClub   = "13 YouShallNotPass"
+        clientComeAtWrongTime = "13 NotOpenYet"
+        clientUnknown         = "13 clientUnknown"
+        placeIsBusy           = "13 PlaceIsBusy"
+        clubHaveFreeTable     = "13 IcanWaitNoLonger!"
+)
+
+const timeLayout = "15:04"
+
+type Cyberсlub struct {
+        TableAmount  int           // Количество столов в клубе
+        WorkingStart time.Time     // Время открытия
+        WorkingEnd   time.Time     // Время закрытия
+        HourPrice    int           // Цена за 1 час
+        tables       map[int]table // Все столы клуба
+        queue        []player      // Очередь клиентов
+        Scanner      *bufio.Scanner
+}
+
+func (c *Cyberсlub) createTables() <span class="cov8" title="1">{
+        tables := make(map[int]table)
+        for i := 1; i &lt;= c.TableAmount; i++ </span><span class="cov8" title="1">{
+                tables[i] = table{
+                        revenue:       0,
+                        startRentTime: time.Time{},
+                        rentDuration:  time.Time{},
+                        isBusy:        false,
+                        usedBy:        player{},
+                }
+        }</span>
+        <span class="cov8" title="1">c.tables = tables</span>
+}
+
+func (c *Cyberсlub) createQueue() <span class="cov8" title="1">{
+        var queue []player
+        c.queue = queue
+}</span>
+
+func (c *Cyberсlub) RunParsing() error <span class="cov8" title="1">{
+        c.createTables()
+        c.createQueue()
+
+        fmt.Println(c.WorkingStart.Format(timeLayout))
+        for c.Scanner.Scan() </span><span class="cov8" title="1">{
+                eventText := c.Scanner.Text()
+                fmt.Println(eventText)
+
+                // Получаем время и id ивента
+                eventSplit := strings.Split(eventText, " ")
+                eventTime, err := time.Parse(timeLayout, eventSplit[0])
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">eventID, err := strconv.Atoi(eventSplit[1])
+                user := player{name: eventSplit[2]}
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+
+                <span class="cov8" title="1">switch eventID </span>{
+                case incomingClientEntered:<span class="cov8" title="1">
+                        if c.isPlayerInClub(user.name) </span><span class="cov8" title="1">{
+                                fmt.Println(eventSplit[0], clientAlreadyInClub)
+                                break</span>
+                        }
+
+                        <span class="cov8" title="1">if !eventTime.After(c.WorkingStart) || !eventTime.Before(c.WorkingEnd) </span><span class="cov8" title="1">{
+                                fmt.Println(eventSplit[0], clientComeAtWrongTime)
+                                break</span>
+                        }
+                case incomingClientTakeSeat:<span class="cov8" title="1">
+                        tableIndex, err := strconv.Atoi(eventSplit[3])
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+
+                        <span class="cov8" title="1">free, err := c.isTableFree(tableIndex)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+
+                        <span class="cov8" title="1">if !free </span><span class="cov8" title="1">{
+                                fmt.Println(eventSplit[0], placeIsBusy)
+                                break</span>
+                        }
+
+                        <span class="cov8" title="1">pastTableIndex, err := c.getPlayerTable(user.name)
+                        if err != nil </span><span class="cov8" title="1">{
+                                // пользователь занимает стол первый раз, а не меняет его
+                                err := user.takeTableInClub(c, tableIndex, eventTime)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return err
+                                }</span>
+                        } else<span class="cov8" title="1"> {
+                                // пользователь меняет стол
+                                err := user.clearTableInClub(c, pastTableIndex, eventTime)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return err
+                                }</span>
+
+                                <span class="cov8" title="1">err = user.takeTableInClub(c, tableIndex, eventTime)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return err
+                                }</span>
+                        }
+                case incomingClientWaiting:<span class="cov8" title="1">
+                        haveFreeTable, err := c.haveFreeTable()
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+
+                        <span class="cov8" title="1">if haveFreeTable </span><span class="cov8" title="1">{
+                                fmt.Println(eventSplit[0], clubHaveFreeTable)
+                                break</span>
+                        }
+
+                        <span class="cov8" title="1">if c.isQueueFull() </span><span class="cov8" title="1">{
+                                fmt.Println(eventSplit[0], outcomingClientLeft, user.name)
+                                break</span>
+                        }
+                        <span class="cov8" title="1">user.takeQueueInClub(c)</span>
+                case incomingClientLeft:<span class="cov8" title="1">
+                        if !c.isPlayerInClub(user.name) </span><span class="cov0" title="0">{
+                                fmt.Println(eventSplit[0], clientUnknown)
+                                break</span>
+                        }
+
+                        <span class="cov8" title="1">playerTable, err := c.getPlayerTable(user.name)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+
+                        <span class="cov8" title="1">err = user.clearTableInClub(c, playerTable, eventTime)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+
+                        <span class="cov8" title="1">if len(c.queue) &gt; 0 </span><span class="cov8" title="1">{
+                                newUser := c.queue[0]
+                                err = newUser.takeTableInClub(c, playerTable, eventTime)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return err
+                                }</span>
+                                <span class="cov8" title="1">c.popQueue()
+                                fmt.Println(eventSplit[0], outcomingClientTakeSeat, newUser.name, playerTable)</span>
+
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">err := c.close(c.WorkingEnd)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">c.calculateAllRevenue()
+
+        // Проверяем наличие ошибок при сканировании файла
+        if err := c.Scanner.Err(); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("ошибка при сканировании файла: %v", err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (c *Cyberсlub) isPlayerInClub(name string) bool <span class="cov8" title="1">{
+        for _, t := range c.tables </span><span class="cov8" title="1">{
+                if t.isBusy </span><span class="cov8" title="1">{
+                        if t.usedBy.name == name </span><span class="cov8" title="1">{
+                                return true
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+func (c *Cyberсlub) getPlayerTable(name string) (int, error) <span class="cov8" title="1">{
+        if !c.isPlayerInClub(name) </span><span class="cov8" title="1">{
+                return 0, fmt.Errorf("UserNotInClub")
+        }</span>
+        <span class="cov8" title="1">for i, t := range c.tables </span><span class="cov8" title="1">{
+                if t.isBusy </span><span class="cov8" title="1">{
+                        if t.usedBy.name == name </span><span class="cov8" title="1">{
+                                return i, nil
+                        }</span>
+                }
+        }
+        <span class="cov0" title="0">return 0, fmt.Errorf("TableNotFound")</span>
+}
+
+func (c *Cyberсlub) isTableFree(tableIndex int) (bool, error) <span class="cov8" title="1">{
+        if tableIndex &gt; c.TableAmount </span><span class="cov0" title="0">{
+                return false, fmt.Errorf("TableIndexOutOfRange")
+        }</span>
+
+        <span class="cov8" title="1">return !c.tables[tableIndex].isBusy, nil</span>
+}
+
+func (c *Cyberсlub) haveFreeTable() (bool, error) <span class="cov8" title="1">{
+        for i := 1; i &lt; c.TableAmount; i++ </span><span class="cov8" title="1">{
+                free, err := c.isTableFree(i)
+                if err != nil </span><span class="cov0" title="0">{
+                        return false, err
+                }</span>
+                <span class="cov8" title="1">if free </span><span class="cov8" title="1">{
+                        return true, nil
+                }</span>
+        }
+        <span class="cov8" title="1">return false, nil</span>
+}
+
+func (c *Cyberсlub) isQueueFull() bool <span class="cov8" title="1">{
+        return len(c.queue) == c.TableAmount
+}</span>
+
+func (c *Cyberсlub) popQueue() <span class="cov8" title="1">{
+        newQueue := c.queue[1:]
+        c.queue = newQueue
+}</span>
+
+func (c *Cyberсlub) close(eventTime time.Time) error <span class="cov8" title="1">{
+        var names []string
+        for i := 1; i &lt;= c.TableAmount; i++ </span><span class="cov8" title="1">{
+                free, err := c.isTableFree(i)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">if !free </span><span class="cov8" title="1">{
+                        user := c.tables[i].usedBy
+                        err := user.clearTableInClub(c, i, eventTime)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+                        <span class="cov8" title="1">names = append(names, user.name)</span>
+                }
+        }
+        <span class="cov8" title="1">sort.Strings(names)
+        for _, v := range names </span><span class="cov8" title="1">{
+                fmt.Println(eventTime.Format(timeLayout), outcomingClientLeft, v)
+        }</span>
+        <span class="cov8" title="1">fmt.Println(eventTime.Format(timeLayout))
+        return nil</span>
+}
+
+func (c *Cyberсlub) calculateAllRevenue() <span class="cov8" title="1">{
+        for i := 1; i &lt;= c.TableAmount; i++ </span><span class="cov8" title="1">{
+                fmt.Println(i, c.tables[i].revenue, c.tables[i].rentDuration.Format(timeLayout))
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package cyberclub
+
+import (
+        "fmt"
+        "time"
+)
+
+type player struct {
+        name string
+}
+
+func (p player) takeTableInClub(c *Cyberсlub, tableIndex int, eventTime time.Time) error <span class="cov8" title="1">{
+        if tableIndex &gt; c.TableAmount </span><span class="cov0" title="0">{
+                return fmt.Errorf("TableIndexOutOfRange")
+        }</span>
+
+        <span class="cov8" title="1">t := table{
+                revenue:       c.tables[tableIndex].revenue,
+                startRentTime: eventTime,
+                rentDuration:  c.tables[tableIndex].rentDuration,
+                isBusy:        true,
+                usedBy:        p,
+        }
+        c.tables[tableIndex] = t
+        return nil</span>
+}
+
+func (p player) clearTableInClub(c *Cyberсlub, tableIndex int, eventTime time.Time) error <span class="cov8" title="1">{
+        if tableIndex &gt; c.TableAmount </span><span class="cov0" title="0">{
+                return fmt.Errorf("TableIndexOutOfRange")
+        }</span>
+
+        <span class="cov8" title="1">oldTable := c.tables[tableIndex]
+        newRevenue := oldTable.calculateNewRevenue(eventTime, c.HourPrice)
+        startTime := c.tables[tableIndex].startRentTime
+        timeDif := eventTime.Sub(startTime)
+        NewRentDuration := c.tables[tableIndex].rentDuration.Add(timeDif)
+        t := table{
+                revenue:       newRevenue,
+                startRentTime: time.Time{},
+                rentDuration:  NewRentDuration,
+                isBusy:        false,
+                usedBy:        player{},
+        }
+        c.tables[tableIndex] = t
+
+        return nil</span>
+}
+
+func (p player) takeQueueInClub(c *Cyberсlub) <span class="cov8" title="1">{
+        c.queue = append(c.queue, p)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package cyberclub
+
+import (
+        "math"
+        "time"
+)
+
+type table struct {
+        revenue       int       // Текущая выручка стола
+        startRentTime time.Time // Время старта аренды
+        rentDuration  time.Time // Промежуток времени когда стол занят
+        isBusy        bool      // Занят ли стол игроком
+        usedBy        player    // Игрок кем занят стол
+}
+
+func (t *table) calculateNewRevenue(endTime time.Time, rate int) int <span class="cov8" title="1">{
+        startTime := t.startRentTime
+        PastRev := t.revenue
+        timeDif := endTime.Sub(startTime)
+        currentRev := int(math.Ceil(timeDif.Hours())) * rate
+        return PastRev + currentRev
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package parser
+
+import (
+        "YADRO-parser/internal/cyberclub"
+        "bufio"
+        "fmt"
+        "os"
+        "strconv"
+        "strings"
+        "time"
+)
+
+const timeLayout = "15:04"
+
+func Parse(filePath string) error <span class="cov8" title="1">{
+        file, err := os.Open(filePath)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("ошибка при открытии файла: %v", err)
+        }</span>
+        <span class="cov8" title="1">defer file.Close()
+
+        // Создаем буфер для чтения файла
+        scanner := bufio.NewScanner(file)
+
+        // Получаем количество столов
+        scanner.Scan()
+        tablesNum, err := strconv.Atoi(scanner.Text())
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Получаем рабочие часы клуба
+        <span class="cov8" title="1">scanner.Scan()
+        workingTime := strings.Split(scanner.Text(), " ")
+        workingStart, err := time.Parse(timeLayout, workingTime[0])
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">workingEnd, err := time.Parse(timeLayout, workingTime[1])
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Получаем цену 1 часа
+        <span class="cov8" title="1">scanner.Scan()
+        hourPrice, err := strconv.Atoi(scanner.Text())
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">club := cyberclub.Cyberсlub{
+                TableAmount:  tablesNum,
+                WorkingStart: workingStart,
+                WorkingEnd:   workingEnd,
+                HourPrice:    hourPrice,
+                Scanner:      scanner,
+        }
+
+        err = club.RunParsing()
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println(err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
